@@ -9,12 +9,17 @@ android {
 
     defaultConfig {
         applicationId "com.example.a598_tumor_cnn"
-        minSdk 24
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    aaptOptions {
+        noCompress "tflite"
+        noCompress "lite"
     }
 
     buildTypes {
@@ -49,5 +54,6 @@ dependencies {
     // Tensorflow Lite dependencies
     implementation 'org.tensorflow:tensorflow-lite-task-vision-play-services:0.4.2'
     implementation 'com.google.android.gms:play-services-tflite-gpu:16.1.0'
+    implementation 'org.tensorflow:tensorflow-lite:2.15.0'
 
 }

@@ -1,89 +1,57 @@
 package com.example.a598_tumor_cnn
 
+import android.content.res.AssetManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
-import com.example.a598_tumor_cnn.databinding.ActivityMainBinding
-import com.google.android.gms.tflite.client.TfLiteInitializationOptions
-import kotlinx.coroutines.Dispatchers   // for async coroutines
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import org.tensorflow.lite.task.gms.vision.TfLiteVision
-import org.tensorflow.lite.task.gms.vision.detector.Detection
+import org.tensorflow.lite.Interpreter
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMainBinding
-    // check https://github.com/tensorflow/examples/blob/master/lite/examples/object_detection/android/app/src/main/java/org/tensorflow/lite/examples/objectdetection/ObjectDetectorHelper.kt
-    // seems like I should have a seperate class
-    val objectDetectorListener: DetectorListener? = null
-
-    // need to add onInitialized here?
-    // should clone example code and poke and prod
-    interface DetectorListener {
-        fun onError(error: String)
-        fun onResults(
-            results: MutableList<Detection>?,
-            inferenceTime: Long,
-            imageHeight: Int,
-            imageWidth: Int
-        )
-    }
+    private lateinit var interpreter: Interpreter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-        // Init google play services
-        val options =
-            TfLiteInitializationOptions.builder().setEnableGpuDelegateSupport(true).build()
+        // Load the TensorFlow Lite model
+        interpreter = Interpreter(loadModelFile())
 
-        TfLiteVision.initialize(this, options).addOnSuccessListener {
-            objectDetectorListener.onInitialized()
-        }.addOnFailureListener {
-            objectDetectorListener?.onError("failed to init: " + it.message)
-        }
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        setSupportActionBar(binding.toolbar)
-
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
-        }
+        // Process the image and display the output
+        processImage()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+    private fun loadModelFile(): MappedByteBuffer {
+        val assetManager: AssetManager = assets
+        val fileDescriptor = assetManager.openFd("model.tflite")
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
+    private fun processImage() {
+        // Load the image (for simplicity, assuming it's in the assets directory)
+        val bitmap = BitmapFactory.decodeStream(assets.open("G_4.jpg"))
+
+        // Perform inference with the TensorFlow Lite model
+        val outputText = performInference(bitmap)
+
+        // Display the output in the TextView
+        val textView: TextView = findViewById(R.id.outputTextView)
+        textView.text = outputText
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+    private fun performInference(bitmap: Bitmap): String {
+        // Preprocess the input image and perform inference with the TensorFlow Lite model
+        // Replace this with your actual inference logic
+        // For simplicity, let's assume the model takes a bitmap and outputs a string
+        return "Output of the TensorFlow Lite model"
     }
 }
