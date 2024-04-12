@@ -16,7 +16,7 @@ import java.nio.ByteBuffer
 class MainActivity : AppCompatActivity() {
 
     private lateinit var interpreter: Interpreter
-    private val INPUTSIZE = 256 // Input size of your model
+    private val imgSize = 256 // Input size of your model
     private val numClasses = 4
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,27 +40,26 @@ class MainActivity : AppCompatActivity() {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    // TODO update tflite model to include preproccesing step if it doesnt work (in python in vscode)
     private fun bitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * INPUTSIZE * INPUTSIZE * 3) // Assuming 3 channels (RGB)
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imgSize * imgSize * 3) // Assuming 3 channels (RGB)
         byteBuffer.order(java.nio.ByteOrder.nativeOrder())
-        val intValues = IntArray(INPUTSIZE * INPUTSIZE)
+        val intValues = IntArray(imgSize * imgSize)
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         var pixel = 0
-        for (i in 0 until INPUTSIZE) {
-            for (j in 0 until INPUTSIZE) {
+        for (i in 0 until imgSize) {
+            for (j in 0 until imgSize) {
                 val `val` = intValues[pixel++]
-                byteBuffer.putFloat(((`val` shr 16 and 0xFF) - 127.0f) / 128.0f)
-                byteBuffer.putFloat(((`val` shr 8 and 0xFF) - 127.0f) / 128.0f)
-                byteBuffer.putFloat(((`val` and 0xFF) - 127.0f) / 128.0f)
-            }
-        }
+                byteBuffer.putFloat(((`val` shr 16 and 0xFF)*(1f/1)))
+                byteBuffer.putFloat(((`val` shr 8 and 0xFF)*(1f/1)))
+                byteBuffer.putFloat(((`val` and 0xFF)*(1f/1)))
+            }   //TODO issue was that I was resizing the images here (preprocessing), when my model already does that
+        }       //TODO add upload from gallery support and we're done! ALso ^ https://www.youtube.com/watch?v=yV9nrRIC_R0 helpful
         return byteBuffer
     }
 
     private fun resizeBitmap(bitmap: Bitmap): Bitmap {
-        // val inputSize = 224 // Input size of your model
-        return Bitmap.createScaledBitmap(bitmap, INPUTSIZE, INPUTSIZE, true)
+        // val imgSize = 224 // Input size of your model
+        return Bitmap.createScaledBitmap(bitmap, imgSize, imgSize, false)
     }
 
     private fun getOutputLabel(output: FloatArray): String {
@@ -71,9 +70,7 @@ class MainActivity : AppCompatActivity() {
         val maxIndex = output.indices.maxByOrNull { output[it] } ?: 0
         return labels[maxIndex]
     }
-    // TODO for some reason it always leans towards class 1 glioma, must be something with
-    // how im interacting with the model here, try incorporating preprocessing into .tf file
-    // like I suggest above. The bitmapToByteBuffer thing seems weird to me
+
     private fun performInference(bitmap: Bitmap): String {
         // Resize the input bitmap to match the input size of the model
         val resizedBitmap = resizeBitmap(bitmap)
@@ -86,19 +83,19 @@ class MainActivity : AppCompatActivity() {
         interpreter.run(inputBuffer, output)
 
         // Get the label corresponding to the highest probability class
-        //return getOutputLabel(output[0])
-        // Print the probabilities for each class
-        val probabilities = output[0]
-        val stringBuilder = StringBuilder()
-        for (i in probabilities.indices) {
-            stringBuilder.append("Class $i: ${probabilities[i]}\n")
-        }
-        return stringBuilder.toString()
+        return getOutputLabel(output[0])    // TODO do both label print and probability print?
+//        // Print the probabilities for each class
+//        val probabilities = output[0]
+//        val stringBuilder = StringBuilder()
+//        for (i in probabilities.indices) {
+//            stringBuilder.append("Class $i: ${probabilities[i]}\n")
+//        }
+//        return stringBuilder.toString()
     }
 
     private fun processImage() {
         // Load the image (for simplicity, assuming it's in the assets directory)
-        val bitmap = BitmapFactory.decodeStream(assets.open("N_149.jpg"))
+        val bitmap = BitmapFactory.decodeStream(assets.open("M_643.jpg"))
 
         // Perform inference with the TensorFlow Lite model
         val outputText = performInference(bitmap)
