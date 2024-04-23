@@ -1,6 +1,8 @@
 *Installation guide goes here when project complete*
 1 for editing the app in android studio
   - android studio
-  - Java
+  - That's pretty much it. Just set everything up to use kotlin.
 
 1 for user installing the app
+  - download the apk to your phone
+  - allow whatever service you downloaded with to install unknown apps
